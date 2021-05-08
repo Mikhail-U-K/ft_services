@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  annotations:
+    metallb.universe.tf/allow-shared-ip: shared
+spec:
+  type: LoadBalancer
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  - name: https
+    port: 443
+    targetPort: 443
+  selector:
+    app: nginxPod
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginxdeploy
+spec:
+  template:
+    metadata:
+      name: nginx-pod
+      labels:
+        app: nginxPod
+        type: nginx
+    spec:
+      containers: 
+        - name: nginxcontainer
+          image: nginx_image
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 80
+            - name: https
+              containerPort: 443
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - /live_status.sh
+            initialDelaySeconds: 30
+            periodSeconds: 10
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginxPod
+      type: nginx
